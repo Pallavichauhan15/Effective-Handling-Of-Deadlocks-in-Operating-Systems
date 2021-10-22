@@ -1,0 +1,134 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<pthread.h>
+#include<unistd.h>
+pthread_mutex_t m1=PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t m2=PTHREAD_MUTEX_INITIALIZER;
+int r1=0,r2=0;
+int i[4];
+int s[4][10];
+void merger(int x,int y);
+void *t1()
+{
+int f=0;
+if(r1!=0)
+{
+merger(0,r1-1);
+f=1;
+}
+pthread_mutex_lock(&m1);
+if(f==1)
+i[0]=i[0]-i[r1-1];
+r1=1;
+sleep(1);
+pthread_mutex_unlock(&m1);
+r1=0;
+printf("\n Process 1 completed");
+}
+void *t2()
+{
+int f=0;
+if(r2!=0)
+{
+merger(1,r2-1);
+f=1;
+}
+pthread_mutex_lock(&m2);
+if(f==1)
+i[1]=i[1]-i[r2-1];
+r2=2;
+sleep(1);
+pthread_mutex_unlock(&m2);
+r2=0;
+printf("\n Process 2 completed");
+}
+void *t3()
+{
+int f=0;
+if(r1!=0)
+{
+merger(2,r1-1);
+f=1;
+}
+pthread_mutex_lock(&m1);
+if(f==1)
+i[2]=i[2]-i[r1-1];
+r1=3;
+if(r2!=0)
+{
+merger(3,r2-1);
+f=2;
+}
+pthread_mutex_lock(&m2);
+if(f==2)
+i[2]=i[2]-i[r2-1];
+r2=3;
+sleep(1);
+pthread_mutex_unlock(&m2);
+r2=0;
+pthread_mutex_unlock(&m1);
+r1=0;
+printf("\nProcess 3 completed");
+}
+void *t4()
+{
+int f=0;
+if(r2!=0)
+{
+merger(3,r2-1);
+f=2;
+}
+pthread_mutex_lock(&m2);
+if(f=2)
+i[3]=i[3]-i[r2-1];
+r2=4;
+if(r1!=0)
+{
+merger(3,r1-1);
+f=1;
+}
+pthread_mutex_lock(&m1);
+if(f==1)
+i[3]=i[3]-i[r1-1];
+r1=4;
+sleep(1);
+pthread_mutex_unlock(&m1);
+r1=0;
+pthread_mutex_unlock(&m2);
+r2=0;
+printf("\nProcess 4 completed");
+}
+void merger(int a1,int b)
+{
+int j,k=0;
+for(j=i[a1];j<10;j++)
+if(k==i[b])
+break;
+if(s[b][k]==a1+1)
+{
+printf("\nDeadlock detected");
+exit(0);
+}
+s[a1][j]=s[b][k];
+k++;
+i[a1]=i[a1]+1;
+}
+}
+int main()
+{
+pthread_t threads[4];
+int j;
+for(j=0;j<4;j++)
+i[j]=1;
+s[0][0]=1;
+s[1][0]=2;
+s[2][0]=3;
+s[3][0]=4;
+pthread_create(&threads[0],NULL,t1,NULL);
+pthread_create(&threads[1],NULL,t2,NULL);
+pthread_create(&threads[2],NULL,t3,NULL);
+pthread_create(&threads[3],NULL,t4,NULL);
+for(j=0;j<4;j++)
+pthread_join(threads[j],NULL);
+return 0;
+}
